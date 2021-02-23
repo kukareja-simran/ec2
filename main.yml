@@ -1,0 +1,57 @@
+---
+# tasks file for ec2
+- name: Launch Master EC2 instance
+  ec2:
+    key_name: menu
+    instance_type: t2.micro
+    image: ami-08e0ca9924195beba
+    wait: "yes"
+    count: 1
+    vpc_subnet_id: subnet-02126f4e
+    group_id: sg-a6d8a4c2
+    instance_tags:
+      Name: "Master Node"
+    assign_public_ip: yes
+    region: ap-south-1
+    state: present
+    aws_access_key: "{{ username }}"
+    aws_secret_key: "{{ password }}"
+  register: a
+- debug:
+   var: a.instances[0].public_ip
+  
+- name: Launch Slave EC2 Instance
+  ec2:
+    key_name: menu
+    instance_type: t2.micro
+    image: ami-08e0ca9924195beba
+    wait: "yes"
+    count: 2
+    vpc_subnet_id: subnet-02126f4e
+    group_id: sg-a6d8a4c2
+    instance_tags:
+      Name: "Slave Node"
+    assign_public_ip: yes
+    region: ap-south-1
+    state: present
+    aws_access_key: "{{ username }}"
+    aws_secret_key: "{{ password }}"
+  register: b
+- debug:
+    var: b.instances[0].public_ip
+- debug:
+    var: b.instances[0].public_ip
+
+- name: updating inventory
+  blockinfile:
+   path: /etc/hosts.txt
+   block: |
+    [master]
+    {{  a.instances[0].public_ip }} ansible_user=ec2-user
+    [slave]
+    {{  b.instances[0].public_ip }} ansible_user=ec2-user
+    {{  b.instances[1].public_ip }} ansible_user=ec2-user 
+  register: c
+- debug:
+        var: c.msg
+
